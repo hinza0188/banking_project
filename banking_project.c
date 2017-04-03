@@ -17,7 +17,7 @@ struct timespec customer_entering_time, teller_process_time1, teller_process_tim
 int bank_closed, queue_empty;
 // these are variables that represents counting values ( greater than or equal to 0)
 int total_customers = 0;
-double time_waiting = 0;
+double time_waiting, queue_wait, teller_time_spent = 0;
 
 /**
  * Generates random number from Min to Max
@@ -42,9 +42,11 @@ void* enter_customer( void* arg ) {
 			int nsec = ranged_random(min,max);
 			customer_entering_time.tv_sec = 0;
 			customer_entering_time.tv_nsec = nsec;
+			pthread_mutex_lock( &mutex );
 			enqueue(total_customers);
 			total_customers++;
 			printf("Customer_%d has come and waiting to be served\n", total_customers);
+			pthread_mutex_unlock( &mutex );
 			nanosleep(&customer_entering_time, &end_time);
 		}
 	}
@@ -130,8 +132,7 @@ void* teller3( void* arg ) {
 }
 
 int main( int argc, char *argv[] ) {
-	int avg_time;
-	//QueueInit();
+	//int avg_time;
 	srand(time(NULL));
 	printf("Current Time: 08:00 A.M. || Bank Opened\r\n");
 	bank_closed = 0;			// bank is opens
@@ -153,8 +154,27 @@ int main( int argc, char *argv[] ) {
     printf("Current Time: 04:00 P.M. || Bank Closed\r\n");
 
     // now prints all results
-    avg_time = (time_waiting/total_customers); // get total avg time in seconds
-    printf("total customer: %d || avg_time: %d min %d sec\n", total_customers, ((avg_time%3600)/60), ((avg_time%3600)%60));
+    /* 1. The total number of customers serviced during the day. */
+    printf("Total number of customer: %d\n", total_customers);
+    /* 2. The average time each customer spends waiting in the queue */
+
+    /* 3. The average time each customer spends with the teller */
+
+    /* 4. The average time tellers wait for customers */
+
+    /* 5. The maximum customer wait time in the queue */
+
+    /* 6. The maximum wait time for tellers waiting for customers */
+
+    /* 7. The maximum transaction time for the tellers */
+
+    /* 8. The maximum depth of the customer queue */
+
+
+    //avg_time = (time_waiting/total_customers); // get total avg time in seconds
+    //printf("Average_time: %d min %d sec\n", total_customers, ((avg_time%3600)/60), ((avg_time%3600)%60));
+
+
 
     return EXIT_SUCCESS;
 }
