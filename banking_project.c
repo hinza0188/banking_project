@@ -143,10 +143,12 @@ int main( int argc, char *argv[] ) {
     /* Let the threads run for 60 seconds. */
 
     sleep( 42 );	// this represents 420 minutes == 7 hours
-    if (!empty()) {
-    	printf("Not all customer has been served :(\n");
-    	printf("Left-over customer: %d\n", queue_size());
-    }
+    //// See if all customer has been served by tellers //////
+    if (!empty()) {											//
+    	printf("Not all customer has been served :(\n");	//
+    	printf("Left-over customer: %d\n", queue_size());	//
+    }														//
+    //////////////////////////////////////////////////////////
     bank_closed = 1;			// bank is closed
     printf("Current Time: 04:00 P.M. || Bank Closed\r\n");
 
