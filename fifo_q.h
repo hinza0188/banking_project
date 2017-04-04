@@ -7,12 +7,12 @@
 
 typedef struct {
 	int cust_id;
-	int in_time;
-	int out_time;
+	long long int in_time;
+	long long int out_time;
 }cust_timing;
 
 void QueueInit(void);
-void enqueue(int,int);
+void enqueue(int,long long int);
 cust_timing dequeue(void);
 int empty(void);
 int queue_size(void);

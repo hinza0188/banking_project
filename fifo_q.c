@@ -6,14 +6,9 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
+#include <fifo_q.h>
 
 int qSize = 0;
-
-typedef struct {
-	int cust_id;
-	int in_time;
-	int out_time;
-}cust_timing;
 
 struct node{
     cust_timing data;
@@ -23,7 +18,7 @@ struct node{
 void QueueInit(void){
 	head = tail = NULL;
 }
-void enqueue(int customer, int in_time){
+void enqueue(int customer, long long int in_time){
 	if (tail == NULL) {
 		tail = (struct node *)malloc(sizeof(struct node));
 		tail->ptr = NULL;
