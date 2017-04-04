@@ -18,6 +18,9 @@ struct timespec customer_entering_time, teller_process_time1, teller_process_tim
 int bank_closed, queue_empty;
 // these are variables that represents counting values ( greater than or equal to 0)
 int queue_wait_time, system_time, total_customers = 0;
+int queue_max_time=0;
+int max_depth = 0;
+int queue_depth=0;
 double teller_wait_time = 0;
 
 /**
@@ -43,6 +46,11 @@ void* enter_customer( void* arg ) {
 			pthread_mutex_lock( &mutex );
 			total_customers++;
 			enqueue(total_customers, system_time);
+			queue_depth ++;
+			if(queue_depth>max_depth)
+			{
+				max_depth = queue_depth; ///////used to denote the maximum depth of the queue.
+			}
 			pthread_mutex_unlock( &mutex );
 
 			printf("Customer_%d has come and waiting to be served\n", total_customers);
@@ -66,11 +74,17 @@ void* teller1( void* arg ) {
     		pthread_mutex_lock( &mutex );
 			customer_data = dequeue();					// dequeue customer from the waiting list
 			customer_data.out_time = system_time;
+
 			pthread_mutex_unlock( &mutex );
 
 			// get out time here
 			queue_wait_time += customer_data.out_time - customer_data.in_time;
-
+			pthread_mutex_lock (&mutex);
+			if(queue_wait_time > queue_max_time)
+						{
+								queue_max_time = queue_wait_time;
+						}
+			pthread_mutex_unlock(&mutex);
 
 			// increment the waiting time for calculating average waiting time
 			printf("Teller_1 is serving customer_%d\n", customer_data.cust_id);
@@ -104,6 +118,12 @@ void* teller2( void* arg ) {
 
 			// get out time here
 			queue_wait_time += customer_data.out_time - customer_data.in_time;
+			pthread_mutex_lock (&mutex);
+						if(queue_wait_time > queue_max_time)
+									{
+											queue_max_time = queue_wait_time;
+									}
+			pthread_mutex_unlock(&mutex);
 
 			int nsec = ranged_random(min,max);
 			teller_process_time2.tv_nsec = nsec;
@@ -136,6 +156,12 @@ void* teller3( void* arg ) {
 
 			// get out time here
 			queue_wait_time += customer_data.out_time - customer_data.in_time;
+			pthread_mutex_lock (&mutex);
+			if(queue_wait_time > queue_max_time)
+									{
+											queue_max_time = queue_wait_time;
+									}
+			sthread_mutex_unlock(&mutex);
 
 			int nsec = ranged_random(min,max);
 			teller_process_time3.tv_nsec = nsec;
@@ -201,12 +227,13 @@ int main( int argc, char *argv[] ) {
 
 
     /* 5. The maximum customer wait time in the queue */
-
+	printf("The maximum customer wait time is the queue : %d\n",queue_max_time);
     /* 6. The maximum wait time for tellers waiting for customers */
 
     /* 7. The maximum transaction time for the tellers */
 
     /* 8. The maximum depth of the customer queue */
+	printf("The maximum depth of the customer queue : %d\n",max_depth);
 
 
     //avg_time = (time_waiting/total_customers); // get total avg time in seconds
