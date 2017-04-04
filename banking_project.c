@@ -56,6 +56,9 @@ void* enter_customer( void* arg ) {
 			printf("Customer_%d entered bank and waiting to be served ", total_customers-1);
 			printf("[%d:%d:%d]\n", hr,mn,sec);
 
+			/* print current queue depth for clarity */
+			printf("Current size of waiting line: %d\n", queue_depth);
+
 			int nsec = ranged_random(min,max);
 			customer_entering_time.tv_nsec = nsec;
 			nanosleep(&customer_entering_time, &end_time);
@@ -69,12 +72,13 @@ void* teller1( void* arg ) {
 	cust_timing customer_data;
 	int min = 30*SEC;
 	int max = 8 *MIN;
-	int hr, mn, sec, wait_time, t_wait;
+	int hr, mn, sec, wait_time, t_wait, nsec;
 
     while( 1 ) {
-    	int nsec = ranged_random(min,max);	// get time between 30sec to 8min
+    	nsec = ranged_random(min,max);	// get time between 30sec to 8min
 		teller_process_time1.tv_nsec = nsec;
     	if (qSize > 0) {	// run only if customer waits on the line
+    		nsec = nsec/SEC
     		t1p = t1d;
 			t1d = system_time;
 			t_wait = (t1d - t1p)/SEC;
@@ -85,7 +89,7 @@ void* teller1( void* arg ) {
 
     		teller_waiting_time += t_wait;
 
-    		teller_working_time += nsec/SEC;				// increment teller wait time
+    		teller_working_time += nsec;				// increment teller wait time
 			customer_data = dequeue();					// dequeue customer from the waiting list
 			customer_data.out_time = system_time;
 
@@ -97,7 +101,8 @@ void* teller1( void* arg ) {
 			mn = (system_time%3600)/60;
 			sec = (system_time%3600)%60;
 			printf("Teller_1 is serving customer_%d ", customer_data.cust_id);
-			printf("[%d:%d:%d]\n", hr,mn,sec);
+			printf("@ [%d:%d:%d] ", hr,mn,sec);
+			printf("for %d min %d sec\n", ((nsec%3600)/60), ((nsec%3600)%60));
 
 			/* get out time here */
 			wait_time = (customer_data.out_time - customer_data.in_time)/SEC;
@@ -118,12 +123,13 @@ void* teller2( void* arg ) {
 	cust_timing customer_data;
 	int min = 30*SEC;
 	int max = 8 *MIN;
-	int hr, mn, sec, wait_time, t_wait;
+	int hr, mn, sec, wait_time, t_wait, nsec;
 
     while( 1 ) {
-		int nsec = ranged_random(min,max);
+		nsec = ranged_random(min,max);
 		teller_process_time2.tv_nsec = nsec;
     	if (qSize > 0) {	// run only if customer waits on the line
+    		nsec = nsec/SEC;
     		t2p = t2d;
 			t2d = system_time;
 			t_wait = (t2d - t2p)/SEC;
@@ -133,7 +139,7 @@ void* teller2( void* arg ) {
 			}
 			teller_waiting_time += t_wait;
 
-			teller_working_time += nsec/SEC;				// increment teller wait time
+			teller_working_time += nsec;				// increment teller wait time
 			customer_data = dequeue();					// dequeue customer from the waiting list
 			customer_data.out_time = system_time;
 
@@ -145,7 +151,8 @@ void* teller2( void* arg ) {
 			mn = (system_time%3600)/60;
 			sec = (system_time%3600)%60;
 			printf("Teller_2 is serving customer_%d ", customer_data.cust_id);
-			printf("[%d:%d:%d]\n", hr,mn,sec);
+			printf("@ [%d:%d:%d] ", hr,mn,sec);
+			printf("for %d min %d sec\n", ((nsec%3600)/60), ((nsec%3600)%60));
 
 			/* get out time here */
 			wait_time = (customer_data.out_time - customer_data.in_time)/SEC;
@@ -166,13 +173,13 @@ void* teller3( void* arg ) {
 	cust_timing customer_data;
 	int min = 30*SEC;
 	int max = 8 *MIN;
-	int hr, mn, sec;
-	float wait_time, t_wait;
+	int hr, mn, sec, wait_time, t_wait, nsec;
 
     while( 1 ) {
-    	int nsec = ranged_random(min,max);
+    	nsec = ranged_random(min,max);
 		teller_process_time3.tv_nsec = nsec;
     	if (qSize > 0) {	// run only if customer waits on the line
+    		nsec = nsec/SEC;
     		t3p = t3d;
 			t3d = system_time;
 			t_wait = (t3d - t3p)/SEC;
@@ -183,7 +190,7 @@ void* teller3( void* arg ) {
 
 			teller_waiting_time += t_wait;
 
-			teller_working_time += nsec/SEC;				// increment teller wait time
+			teller_working_time += nsec;				// increment teller wait time
 			customer_data = dequeue();					// dequeue customer from the waiting list
 			customer_data.out_time = system_time;
 
@@ -195,7 +202,8 @@ void* teller3( void* arg ) {
 			mn = (customer_data.out_time%3600)/60;
 			sec = (customer_data.out_time%3600)%60;
 			printf("Teller_3 is serving customer_%d ", customer_data.cust_id);
-			printf("[%d:%d:%d]\n", hr,mn,sec);
+			printf("@ [%d:%d:%d] ", hr,mn,sec);
+			printf("for %d min %d sec\n", ((nsec%3600)/60), ((nsec%3600)%60));
 
 			/* get out time here */
 			wait_time = (customer_data.out_time - customer_data.in_time)/SEC;
