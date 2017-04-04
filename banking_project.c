@@ -12,11 +12,10 @@ struct timespec customer_entering_time, teller_process_time1, teller_process_tim
 // these are variables that represents flags (0:False | 1:True)
 int bank_closed, queue_empty;
 // these are variables that represents counting values ( greater than or equal to 0)
-int queue_max_time, max_depth, queue_depth, t_max_wait = 0;
-int teller_waiting_time, teller_working_time, tran1, tran2, tran3  = 0;
-long long int t1p, t1d, t2p, t2d, t3p, t3d = 0;
-int queue_wait_time, total_customers = 0;
-long long int system_time = 0;
+int max_depth, queue_depth, tran1, tran2, tran3, total_customers = 0;
+long long int teller_waiting_time, teller_working_time, queue_max_time;
+long long int t1p, t1d, t2p, t2d, t3p, t3d, t_max_wait = 0;
+long long int system_time, queue_wait_time= 0;
 
 /**
  * Generates random number from Min to Max
@@ -78,7 +77,7 @@ void* teller1( void* arg ) {
     		nsec = nsec/SEC							// turn the system time into human readable time
     		t1p = t1d;								// teller_1's start working time -> previous work's done time
 			t1d = system_time;						// teller_1's done time -> current system time
-			t_wait = (t1d - t1p)/SEC;				// teller_1's total wait time in human readble time
+			t_wait = (t1d - t1p);					// teller_1's total wait time in human readble time
 
 			pthread_mutex_lock( &mutex );			// Locks mutex to prevent race condition
 
@@ -87,6 +86,7 @@ void* teller1( void* arg ) {
 
     		if(t_wait > t_max_wait) {
     			t_max_wait = t_wait;				// put Max waiting time if current wait time is greater
+    			printf("New teller wait time record: %d min %d sec\n", ((t_wait%3600)/60), ((t_wait%3600)%60) );
     		}
     		teller_waiting_time += t_wait;			// increment teller's wait time
     		teller_working_time += nsec;			// increment teller's work time
@@ -103,12 +103,13 @@ void* teller1( void* arg ) {
 			printf("for %d min %d sec\n", ((nsec%3600)/60), ((nsec%3600)%60));
 
 			/* calculate the time when customer got served */
-			wait_time = (customer_data.out_time - customer_data.in_time)/SEC;
+			wait_time = (customer_data.out_time - customer_data.in_time);
 			if(wait_time > queue_max_time) {
 				queue_max_time = wait_time;			// replace wait time if greater
+				printf("New customer wait time record: %d min %d sec\n", ((wait_time%3600)/60), ((wait_time%3600)%60) );
 			}
 			queue_wait_time += wait_time;			// increment total wait time
-			printf("Customer_%d's wait_time: %d\n", customer_data.cust_id, wait_time);
+			printf("Customer_%d's wait_time: %d sec\n", customer_data.cust_id, wait_time);
 
 			/* snooze for 30 sec - 8 min in system time */
 			nanosleep(&teller_process_time1, &end_time);
@@ -131,10 +132,11 @@ void* teller2( void* arg ) {
     		nsec = nsec/SEC;
     		t2p = t2d;
 			t2d = system_time;
-			t_wait = (t2d - t2p)/SEC;
+			t_wait = (t2d - t2p);
 			pthread_mutex_lock( &mutex );
 			if(t_wait > t_max_wait) {
 				t_max_wait = t_wait;
+				printf("New teller wait time record: %d min %d sec\n", ((t_wait%3600)/60), ((t_wait%3600)%60) );
 			}
 			teller_waiting_time += t_wait;
 
@@ -154,12 +156,13 @@ void* teller2( void* arg ) {
 			printf("for %d min %d sec\n", ((nsec%3600)/60), ((nsec%3600)%60));
 
 			/* calculate the time when customer got served */
-			wait_time = (customer_data.out_time - customer_data.in_time)/SEC;
+			wait_time = (customer_data.out_time - customer_data.in_time);
 			if(wait_time > queue_max_time) {
 				queue_max_time = wait_time;			// replace wait time if greater
+				printf("New customer wait time record: %d min %d sec\n", ((wait_time%3600)/60), ((wait_time%3600)%60) );
 			}
 			queue_wait_time += wait_time;			// increment total wait time
-			printf("Customer_%d's wait_time: %d\n", customer_data.cust_id, wait_time);
+			printf("Customer_%d's wait_time: %d sec\n", customer_data.cust_id, wait_time);
 
 			/* snooze for 30sec - 8min in system time */
 			nanosleep(&teller_process_time2, &end_time);
@@ -182,10 +185,11 @@ void* teller3( void* arg ) {
     		nsec = nsec/SEC;
     		t3p = t3d;
 			t3d = system_time;
-			t_wait = (t3d - t3p)/SEC;
+			t_wait = (t3d - t3p);
 			pthread_mutex_lock( &mutex );
 			if(t_wait > t_max_wait) {
 				t_max_wait = t_wait;
+				printf("New teller wait time record: %d min %d sec\n", ((t_wait%3600)/60), ((t_wait%3600)%60) );
 			}
 
 			teller_waiting_time += t_wait;
@@ -206,12 +210,13 @@ void* teller3( void* arg ) {
 			printf("for %d min %d sec\n", ((nsec%3600)/60), ((nsec%3600)%60));
 
 			/* get out time here */
-			wait_time = (customer_data.out_time - customer_data.in_time)/SEC;
+			wait_time = (customer_data.out_time - customer_data.in_time);
 			if(wait_time > queue_max_time) {
 				queue_max_time = wait_time;		// replace wait time if greater
+				printf("New customer wait time record: %d min %d sec\n", ((wait_time%3600)/60), ((wait_time%3600)%60) );
 			}
 			queue_wait_time += wait_time;		// increment total wait time
-			printf("Customer_%d's wait_time: %d\n", customer_data.cust_id, wait_time);
+			printf("Customer_%d's wait_time: %d sec\n", customer_data.cust_id, wait_time);
 
 			/* snooze for 30sec - 8min in system time */
 			nanosleep(&teller_process_time3, &end_time);
@@ -222,8 +227,7 @@ void* teller3( void* arg ) {
 
 
 int main( int argc, char *argv[] ) {
-	int avg_teller_time, avg_teller_time2, max_queue_time;
-	float avg_queue_time;
+	int avg_teller_work, avg_teller_wait, avg_queue_time;
 	srand(time(NULL));
 	printf("Current Time || 08:00 A.M. || Bank Opened\r\n");
 	bank_closed = 0;										// bank is opens
@@ -245,39 +249,50 @@ int main( int argc, char *argv[] ) {
     bank_closed = 1;			// bank is closed
     printf("Current Time || 04:00 P.M. || Bank Closed\n\n");
 
-    // now prints all results
+    //////////////////////* now prints all results */////////////////////////////////
     /* 1. The total number of customers serviced during the day. */
     printf("1. Total number of customer: %d\n", total_customers);
 
     /* 2. The average time each customer spends waiting in the queue */
     avg_queue_time = (queue_wait_time/total_customers);
-    // this seems to be broken?
-    printf("2. Average wating time in the queue: %4.2f sec\n", avg_queue_time );
+    printf(
+    	"2. Average wating time in the queue: %d sec\n",
+    	avg_queue_time
+    );
 
     /* 3. The average time each customer spends with the teller */
-    avg_teller_time = (teller_working_time/total_customers);
-	printf("3. Average teller time spent: %d min %d sec\n", ((avg_teller_time%3600)/60), ((avg_teller_time%3600)%60) );
+    avg_teller_work = (teller_working_time/total_customers);
+	printf(
+		"3. Average teller time spent: %d min %d sec\n",
+		((avg_teller_work%3600)/60), ((avg_teller_work%3600)%60)
+	);
 
 	/* 4. The average time tellers wait for customers */
-	avg_teller_time2 = (teller_waiting_time/total_customers);
-	// this seems to be broken?
-	printf("4. Average time tellers wait for customers: %d sec\n", (avg_teller_time2%3600)%60);
+	avg_teller_wait = (teller_waiting_time/total_customers);
+	printf(
+		"4. Average time tellers wait for customers: %d min %d sec\n",
+		(avg_teller_wait%3600)/60, (avg_teller_wait%3600)%60
+	);
 
     /* 5. The maximum customer wait time in the queue */
-	max_queue_time = queue_max_time/SEC;
-	// this seems to be broken?
-	printf("5. The maximum customer wait time in the queue: %d sec\n", max_queue_time);
+	printf(
+		"5. The maximum customer wait time in the queue: %lld min %lld sec\n",
+		((queue_max_time%3600)/60), ((queue_max_time%3600)%60)
+	);
 
     /* 6. The maximum wait time for tellers waiting for customers */
-	printf("6. The maximum wait time for tellers waiting for customers: %d sec\n", t_max_wait);
+	printf(
+		"6. The maximum wait time for tellers waiting for customers: %lld min %lld sec\n",
+		((t_max_wait%3600)/60), ((t_max_wait%3600)%60)
+	);
 
     /* 7. The maximum transaction time for the tellers */
 	if (tran1>=tran2 && tran1>=tran3) {
-		printf("7. The maximum transaction time: %d by Teller_1\n", tran1);
+		printf("7. The maximum transaction time: %d by Teller[1]\n", tran1);
 	} else if (tran2 >= tran1 && tran2>=tran3) {
-		printf("7. The maximum transaction time: %d by Teller_2\n", tran2);
+		printf("7. The maximum transaction time: %d by Teller[2]\n", tran2);
 	} else if (tran3 >= tran1 && tran3>=tran2) {
-		printf("7. The maximum transaction time: %d by Teller_3\n", tran3);
+		printf("7. The maximum transaction time: < %d > by Teller[3]\n", tran3);
 	}
 
     /* 8. The maximum depth of the customer queue */
