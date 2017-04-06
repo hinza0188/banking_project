@@ -13,7 +13,7 @@ struct timespec customer_entering_time, teller_process_time1, teller_process_tim
 int bank_closed, queue_empty;
 // these are variables that represents counting values ( greater than or equal to 0)
 int max_depth, queue_depth, tran1, tran2, tran3, total_customers = 0;
-long long int teller_waiting_time, teller_working_time, queue_max_time,max_break_duration1,max_break_duration2,max_break_duration3,min_break_duration1,min_break_duration2,min_break_duration3, break_duration_time;
+long long int teller_waiting_time, teller_working_time, queue_max_time,max_break_duration1,max_break_duration2,max_break_duration3,min_break_duration1,min_break_duration2,min_break_duration3, break_duration_time1, break_duration_time2, break_duration_time3;
 long long int t1p, t1d, t2p, t2d, t3p, t3d, t_max_wait = 0;
 long long int system_time, queue_wait_time= 0;
 
@@ -120,7 +120,7 @@ void* teller1( void* arg ) {
 				usleep(nsec);
 				int break_count_1 = break_count_1 +1; 			///////////////////////calculates no.of breaks for each teller.
 			}
-			int break_duration_time= break_duration_time + break_duration;
+			break_duration_time1 = break_duration_time1 + break_duration;
 			if(break_duration>max_break_duration1)
 			{
 					max_break_duration1=break_duration;
@@ -192,7 +192,7 @@ void* teller2( void* arg ) {
 							usleep(nsec);
 							int break_count_2 = break_count_2 +1; 	///////////////////////calculates no.of breaks for each teller.
 						}
-						break_duration_time= break_duration_time + break_duration;
+						break_duration_time2= break_duration_time2 + break_duration;
 						if(break_duration>max_break_duration2)
 						{
 								max_break_duration2=break_duration;
@@ -260,17 +260,17 @@ void* teller3( void* arg ) {
 									{
 										break_duration = nsec;
 										usleep(nsec);
-										int break_count_2 = break_count_2 +1; 	///////////////////////calculates no.of breaks for each teller.
+										int break_count_3 = break_count_3 +1; 	///////////////////////calculates no.of breaks for each teller.
 									}
-									break_duration_time= break_duration_time + break_duration;
-									if(break_duration>max_break_duration2)
+									break_duration_time3= break_duration_time3 + break_duration;
+									if(break_duration>max_break_duration3)
 									{
-											max_break_duration2=break_duration;
+											max_break_duration3=break_duration;
 											printf("Max break duration : %d min %d sec \n",((break_duration%3600)/60),((break_duration%3600)%60));
 									}
-									else if (break_duration<max_break_duration2)
+									else if (break_duration<max_break_duration3)
 									{
-											min_break_duration2=break_duration;
+											min_break_duration3=break_duration;
 											printf("Min break duration : %d min %d sec \n ",((break_duration%3600)/60),((break_duration%3600)%60));
 									}
 			/* snooze for 30sec - 8min in system time */
@@ -282,7 +282,7 @@ void* teller3( void* arg ) {
 
 
 int main( int argc, char *argv[] ) {
-	int avg_teller_work, avg_teller_wait, avg_queue_time;
+	int avg_teller_work, avg_teller_wait, avg_queue_time,avg_break_time1,avg_break_time2,avg_break_time3;
 	srand(time(NULL));
 	printf("Current Time || 08:00 A.M. || Bank Opened\r\n");
 	bank_closed = 0;										// bank is opens
@@ -352,6 +352,36 @@ int main( int argc, char *argv[] ) {
 
     /* 8. The maximum depth of the customer queue */
 	printf("8. The maximum depth of the customer queue: %d\n", max_depth);
+
+
+	/*Number of Breaks by each teller *
+	 */
+	printf("9. The number of breaks by teller1 : %d\n",break_count_1);
+	printf("10. The number of breaks by teller2 : %d\n",break_count_2);
+	printf("11. The number of breaks by teller3 : %d\n",break_count_3);
+
+	/*average break duration time */
+	avg_break_time1=break_duration_time1/break_count_1;
+	avg_break_time2=break_duration_time2/break_count_2;
+	avg_break_time3=break_duration_time3/break_count_3;
+
+
+	printf("12. The average break time for teller 1: %d min %d sec \n",((avg_break_time1%3600)/60),((avg_break_time1%3600)%60);
+	printf("13. The average break time for teller 2: %d min %d sec \n",((avg_break_time2%3600)/60),((avg_break_time2%3600)%60);
+	printf("14. The average break time for teller 3: %d min %d sec \n",((avg_break_time3%3600)/60),((avg_break_time3%3600)%60);
+
+	/*longest break time for each tellers*/
+	printf("15.The maximum break time for the teller1: %d min %d sec \n ",((max_break_duration1%3600)/60),((max_break_duration1%3600)%60);
+	printf("16.The maximum break time for the teller2: %d min %d sec \n ",((max_break_duration2%3600)/60),((max_break_duration2%3600)%60);
+	printf("17.The maximum break time for the teller3: %d min %d sec \n ",((max_break_duration3%3600)/60),((max_break_duration3%3600)%60);
+
+	/*shortest break time for each tellers*/
+	printf("18.The minimum break time for the teller1: %d min %d sec \n ",((min_break_duration1%3600)/60),((min_break_duration1%3600)%60);
+	printf("19.The minimum break time for the teller2: %d min %d sec \n ",((min_break_duration2%3600)/60),((min_break_duration2%3600)%60);
+	printf("20.The minimum break time for the teller3: %d min %d sec \n ",((min_break_duration3%3600)/60),((min_break_duration3%3600)%60);
+
+
+
 
     return EXIT_SUCCESS;
 }
