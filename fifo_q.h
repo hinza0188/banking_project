@@ -9,13 +9,9 @@ typedef struct {
 	int cust_id;
 	long long int in_time;
 	long long int out_time;
-}cust_timing;
+}cust_record;
 
 void QueueInit(void);
 void enqueue(int,long long int);
-cust_timing dequeue(void);
-int empty(void);
+cust_record dequeue(void);
 int queue_size(void);
-
-extern int qSize;
-
