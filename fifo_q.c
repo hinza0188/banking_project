@@ -10,14 +10,29 @@
 
 int qSize = 0;
 
+/*
+ * Linked node structure
+ * that contains cust_timing structure
+ */
 struct node{
-    cust_timing data;
+	cust_record data;
     struct node *ptr;
 }*head,*tail,*temp;
 
+
+/**
+ * Initialize the queue with null pointer
+ */
 void QueueInit(void){
 	head = tail = NULL;
 }
+
+
+/**
+ * Put new data into the queue
+ * if tail is empty, put new data into the tail
+ * and equalize with pointer of the head
+ */
 void enqueue(int customer, long long int in_time){
 	if (tail == NULL) {
 		tail = (struct node *)malloc(sizeof(struct node));
@@ -37,41 +52,48 @@ void enqueue(int customer, long long int in_time){
 	}
 	qSize++;
 }
-cust_timing dequeue(void){
-	cust_timing done;
+
+
+/**
+ * This function removes top of the queue
+ * and returns the removed data
+ * if head is null pointer, return null data
+ * if second node in the queue is not pointing at null
+ * then copy the data into return variable and pop head
+ * if neither, copy the data into return variable and re-initialize the queue
+ */
+cust_record dequeue(void){
+	cust_record pop;
 	temp = head;
 
 	if (temp == NULL) {
 		// case 0: error
-		done.cust_id=NULL;
-		done.in_time=NULL;
-		done.out_time=NULL;
-		return done; // the queue is empty! failing to dequeue
+		// the queue is empty! failing to dequeue
+		pop.cust_id=NULL;
+		pop.in_time=NULL;
+		pop.out_time=NULL;
+		return pop;
 	} else if (temp->ptr != NULL) {
 		// case 1: qSize >= 2
 		temp = temp->ptr;
-		done = head->data;
+		pop = head->data;
 		free(head);
 		head = temp;
 	} else {
 		// case 2: qSize == 1
-		done = head->data;
+		pop = head->data;
 		free(head);
-		head = tail = NULL;
+		QueueInit();
 	}
 	qSize--;
-	return done;
+	return pop;
 
 }
 
-int empty() {
-	if (head==NULL && tail==NULL){
-		return 1;	// true, the queue is empty
-	} else {
-		return 0;	// false, the queue element still exists
-	}
-}
 
+/**
+ * Returns size of the queue
+ */
 int queue_size(){
     return qSize;
 }
