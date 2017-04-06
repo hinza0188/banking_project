@@ -12,7 +12,8 @@ struct timespec customer_entering_time, teller_process_time1, teller_process_tim
 // these are variables that represents flags (0:False | 1:True)
 int bank_closed, queue_empty;
 // these are variables that represents counting values ( greater than or equal to 0)
-int max_depth, queue_depth, tran1, tran2, tran3, total_customers = 0;
+int max_depth, queue_depth, total_customers, max_transaction_time = 0;
+int available_teller = 3;
 long long int teller_waiting_time, teller_working_time, queue_max_time;
 long long int t1p, t1d, t2p, t2d, t3p, t3d, t_max_wait = 0;
 long long int system_time, queue_wait_time= 0;
@@ -51,9 +52,10 @@ void* enter_customer( void* arg ) {
 			mn = (system_time%3600)/60;
 			sec = (system_time%3600)%60;
 			/* print current queue depth for clarity */
-			printf("Customer_%d entered bank and waiting to be served ", total_customers-1);
-			printf("[%d:%d:%d] ", hr,mn,sec);
-			printf("Line Size: %d\n", queue_depth);
+			printf(
+				"Customer_%d entered bank @ [%d:%d:%d] | Line Size: %d\n",
+				total_customers-1,hr,mn,sec,queue_depth
+			);
 
 			nsec = ranged_random(min,max);
 			customer_entering_time.tv_nsec = nsec;
@@ -68,39 +70,47 @@ void* teller1( void* arg ) {
 	cust_timing customer_data;
 	int min = 30*SEC;
 	int max = 8 *MIN;
-	int hr, mn, sec, wait_time, t_wait, nsec;
+	int hr, mn, sec, wait_time, teller_wait, nsec;
 
     while( 1 ) {
-    	nsec = ranged_random(min,max);				// get time between 30sec to 8min
+    	nsec = ranged_random(min,max);				// Get time between 30sec to 8min
 		teller_process_time1.tv_nsec = nsec;
-    	if (qSize > 0) {							// run only if customer waits on the line
-    		nsec = nsec/SEC							// turn the system time into human readable time
-    		t1p = t1d;								// teller_1's start working time -> previous work's done time
-			t1d = system_time;						// teller_1's done time -> current system time
-			t_wait = (t1d - t1p);					// teller_1's total wait time in human readble time
+		pthread_mutex_lock( &mutex );				// Locks mutex to prevent race condition of qSize
+    	if (qSize > 0) {							// Run only if customer waits on the line
+    		printf(
+				"Available number of teller: %d\n",	// Print number of teller available
+				available_teller
+			);
+    		available_teller--;						// Decrement available teller
+    		nsec = nsec/SEC;						// Turn the system time into human readable time
+			t1p = t1d;								// Teller_1's start working time -> previous work's done time
+			t1d = system_time;						// Teller_1's done time -> current system time
+			teller_wait = (t1d - t1p);				// Teller_1's total wait time in human readble time
+			customer_data = dequeue();				// Dequeue customer from the waiting list
+			customer_data.out_time = system_time;	// Record the time when customer got served
 
-			pthread_mutex_lock( &mutex );			// Locks mutex to prevent race condition
-
-			customer_data = dequeue();				// dequeue customer from the waiting list
-			customer_data.out_time = system_time;	// record the time when customer got served
-
-    		if(t_wait > t_max_wait) {
-    			t_max_wait = t_wait;				// put Max waiting time if current wait time is greater
-    			printf("New teller wait time record: %d min %d sec\n", ((t_wait%3600)/60), ((t_wait%3600)%60) );
+    		if(teller_wait > t_max_wait) {
+    			t_max_wait = teller_wait;			// put Max waiting time if current wait time is greater
+    			printf("New teller wait time record: %d min %d sec\n", ((teller_wait%3600)/60), ((teller_wait%3600)%60) );
     		}
-    		teller_waiting_time += t_wait;			// increment teller's wait time
-    		teller_working_time += nsec;			// increment teller's work time
 
-			tran1++;								// increment teller's tansaction time for record
+    		if(nsec > max_transaction_time){
+    			max_transaction_time = nsec;		// put Max transaction time if current transaction time is greater
+    			printf("New teller transaction time record: %d min %d sec\n", ((nsec%3600)/60), ((nsec%3600)%60) );
+    		};
+
+    		teller_waiting_time += teller_wait;		// increment teller's wait time
+    		teller_working_time += nsec;			// increment teller's work time
 			pthread_mutex_unlock( &mutex );
 
 			/* increment the waiting time for calculating average waiting time */
 			hr = 9 + system_time/3600;
 			mn = (system_time%3600)/60;
 			sec = (system_time%3600)%60;
-			printf("Teller_1 is serving customer_%d ", customer_data.cust_id);
-			printf("@ [%d:%d:%d] ", hr,mn,sec);
-			printf("for %d min %d sec\n", ((nsec%3600)/60), ((nsec%3600)%60));
+			printf(
+				"Teller_1 starts serving customer_%d @ [%d:%d:%d]\n",
+				customer_data.cust_id, hr, mn, sec
+			);
 
 			/* calculate the time when customer got served */
 			wait_time = (customer_data.out_time - customer_data.in_time);
@@ -109,10 +119,13 @@ void* teller1( void* arg ) {
 				printf("New customer wait time record: %d min %d sec\n", ((wait_time%3600)/60), ((wait_time%3600)%60) );
 			}
 			queue_wait_time += wait_time;			// increment total wait time
-			printf("Customer_%d's wait_time: %d sec\n", customer_data.cust_id, wait_time);
+			printf("Customer_%d's wait_time: %d sec\n\n", customer_data.cust_id, wait_time);
 
 			/* snooze for 30 sec - 8 min in system time */
 			nanosleep(&teller_process_time1, &end_time);
+			available_teller++;						// increment back to recover availability
+    	} else  {
+    		pthread_mutex_unlock( &mutex );
     	}
     }
     return 0;
@@ -123,37 +136,45 @@ void* teller2( void* arg ) {
 	cust_timing customer_data;
 	int min = 30*SEC;
 	int max = 8 *MIN;
-	int hr, mn, sec, wait_time, t_wait, nsec;
+	int hr, mn, sec, wait_time, teller_wait, nsec;
 
     while( 1 ) {
 		nsec = ranged_random(min,max);
 		teller_process_time2.tv_nsec = nsec;
+		pthread_mutex_lock( &mutex );
     	if (qSize > 0) {							// run only if customer waits on the line
-    		nsec = nsec/SEC;
-    		t2p = t2d;
+			printf(
+				"Available number of teller: %d\n",	// Print number of teller available
+				available_teller
+			);
+			available_teller--;						// Decrement available teller
+			nsec = nsec/SEC;
+			t2p = t2d;
 			t2d = system_time;
-			t_wait = (t2d - t2p);
-			pthread_mutex_lock( &mutex );
-			if(t_wait > t_max_wait) {
-				t_max_wait = t_wait;
-				printf("New teller wait time record: %d min %d sec\n", ((t_wait%3600)/60), ((t_wait%3600)%60) );
+			teller_wait = (t2d - t2p);
+			if(teller_wait > t_max_wait) {
+				t_max_wait = teller_wait;
+				printf("New teller wait time record: %d min %d sec\n", ((teller_wait%3600)/60), ((teller_wait%3600)%60) );
 			}
-			teller_waiting_time += t_wait;
+			if(nsec > max_transaction_time){
+				max_transaction_time = nsec;		// put Max transaction time if current transaction time is greater
+				printf("New teller transaction time record: %d min %d sec\n", ((nsec%3600)/60), ((nsec%3600)%60) );
+			};
 
+			teller_waiting_time += teller_wait;
 			teller_working_time += nsec;			// increment teller wait time
 			customer_data = dequeue();				// dequeue customer from the waiting list
 			customer_data.out_time = system_time;
-
-			tran2++;
 			pthread_mutex_unlock( &mutex );
 
 			/* increment the waiting time for calculating average waiting time */
 			hr = 9 + system_time/3600;
 			mn = (system_time%3600)/60;
 			sec = (system_time%3600)%60;
-			printf("Teller_2 is serving customer_%d ", customer_data.cust_id);
-			printf("@ [%d:%d:%d] ", hr,mn,sec);
-			printf("for %d min %d sec\n", ((nsec%3600)/60), ((nsec%3600)%60));
+			printf(
+				"Teller_2 starts serving customer_%d @ [%d:%d:%d]\n",
+				customer_data.cust_id, hr, mn, sec
+			);
 
 			/* calculate the time when customer got served */
 			wait_time = (customer_data.out_time - customer_data.in_time);
@@ -162,10 +183,14 @@ void* teller2( void* arg ) {
 				printf("New customer wait time record: %d min %d sec\n", ((wait_time%3600)/60), ((wait_time%3600)%60) );
 			}
 			queue_wait_time += wait_time;			// increment total wait time
-			printf("Customer_%d's wait_time: %d sec\n", customer_data.cust_id, wait_time);
+			printf("Customer_%d's wait_time: %d sec\n\n", customer_data.cust_id, wait_time);
 
 			/* snooze for 30sec - 8min in system time */
 			nanosleep(&teller_process_time2, &end_time);
+			available_teller++;						// increment back to recover availability
+    	}
+    	else {
+    		pthread_mutex_unlock( &mutex );
     	}
     }
     return 0;
@@ -176,38 +201,47 @@ void* teller3( void* arg ) {
 	cust_timing customer_data;
 	int min = 30*SEC;
 	int max = 8 *MIN;
-	int hr, mn, sec, wait_time, t_wait, nsec;
+	int hr, mn, sec, wait_time, teller_wait, nsec;
 
     while( 1 ) {
     	nsec = ranged_random(min,max);
 		teller_process_time3.tv_nsec = nsec;
+		pthread_mutex_lock( &mutex );
     	if (qSize > 0) {	// run only if customer waits on the line
-    		nsec = nsec/SEC;
-    		t3p = t3d;
+			printf(
+				"Available number of teller: %d\n",	// Print number of teller available
+				available_teller
+			);
+			available_teller--;						// Decrement available teller
+			nsec = nsec/SEC;
+			t3p = t3d;
 			t3d = system_time;
-			t_wait = (t3d - t3p);
-			pthread_mutex_lock( &mutex );
-			if(t_wait > t_max_wait) {
-				t_max_wait = t_wait;
-				printf("New teller wait time record: %d min %d sec\n", ((t_wait%3600)/60), ((t_wait%3600)%60) );
+			teller_wait = (t3d - t3p);
+			if(teller_wait > t_max_wait) {
+				t_max_wait = teller_wait;
+				printf("New teller wait time record: %d min %d sec\n", ((teller_wait%3600)/60), ((teller_wait%3600)%60) );
 			}
 
-			teller_waiting_time += t_wait;
+			if(nsec > max_transaction_time){
+				max_transaction_time = nsec;		// put Max transaction time if current transaction time is greater
+				printf("New teller transaction time record: %d min %d sec\n", ((nsec%3600)/60), ((nsec%3600)%60) );
+			};
 
-			teller_working_time += nsec;				// increment teller wait time
-			customer_data = dequeue();					// dequeue customer from the waiting list
+			teller_waiting_time += teller_wait;
+
+			teller_working_time += nsec;			// increment teller wait time
+			customer_data = dequeue();				// dequeue customer from the waiting list
 			customer_data.out_time = system_time;
-
-			tran3++;
 			pthread_mutex_unlock( &mutex );
 
 			/* increment the waiting time for calculating average waiting time */
 			hr = 9 + customer_data.out_time/3600;
 			mn = (customer_data.out_time%3600)/60;
 			sec = (customer_data.out_time%3600)%60;
-			printf("Teller_3 is serving customer_%d ", customer_data.cust_id);
-			printf("@ [%d:%d:%d] ", hr,mn,sec);
-			printf("for %d min %d sec\n", ((nsec%3600)/60), ((nsec%3600)%60));
+			printf(
+				"Teller_3 starts serving customer_%d @ [%d:%d:%d]\n",
+				customer_data.cust_id, hr, mn, sec
+			);
 
 			/* get out time here */
 			wait_time = (customer_data.out_time - customer_data.in_time);
@@ -216,10 +250,13 @@ void* teller3( void* arg ) {
 				printf("New customer wait time record: %d min %d sec\n", ((wait_time%3600)/60), ((wait_time%3600)%60) );
 			}
 			queue_wait_time += wait_time;		// increment total wait time
-			printf("Customer_%d's wait_time: %d sec\n", customer_data.cust_id, wait_time);
+			printf("Customer_%d's wait_time: %d sec\n\n", customer_data.cust_id, wait_time);
 
 			/* snooze for 30sec - 8min in system time */
 			nanosleep(&teller_process_time3, &end_time);
+			available_teller++;					// increment back to recover availability
+    	} else {
+    		pthread_mutex_unlock( &mutex );
     	}
     }
     return 0;
@@ -287,13 +324,7 @@ int main( int argc, char *argv[] ) {
 	);
 
     /* 7. The maximum transaction time for the tellers */
-	if (tran1>=tran2 && tran1>=tran3) {
-		printf("7. The maximum transaction time: %d by Teller[1]\n", tran1);
-	} else if (tran2 >= tran1 && tran2>=tran3) {
-		printf("7. The maximum transaction time: %d by Teller[2]\n", tran2);
-	} else if (tran3 >= tran1 && tran3>=tran2) {
-		printf("7. The maximum transaction time: < %d > by Teller[3]\n", tran3);
-	}
+	printf("7. The maximum transaction time: %d min %d sec\n", ((max_transaction_time%3600)/60), ((max_transaction_time%3600)%60));
 
     /* 8. The maximum depth of the customer queue */
 	printf("8. The maximum depth of the customer queue: %d\n", max_depth);
