@@ -11,6 +11,12 @@
 #include <timer.h>
 
 
+/* handling pulse as timer's message */
+typedef union {
+        struct _pulse   pulse;
+} my_message_t;
+
+
 /**
  * Runs QNX timer every 10/6 ms (in real time)
  * to increment system time. Each tick in the system time

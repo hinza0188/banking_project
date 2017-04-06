@@ -12,11 +12,6 @@
 // used for timer pulse
 #define MY_PULSE   _PULSE_CODE_MINAVAIL
 
-// handling pulse as timer's message
-typedef union {
-        struct _pulse   pulse;
-} my_message_t;
-
 /* declare global variable that timer.c and banking_project.c shares */
 extern long long int system_time;
 
