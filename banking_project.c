@@ -13,7 +13,7 @@ struct timespec customer_entering_time, teller_process_time1, teller_process_tim
 int bank_closed, queue_empty;
 // these are variables that represents counting values ( greater than or equal to 0)
 int max_depth, queue_depth, tran1, tran2, tran3, total_customers = 0;
-long long int teller_waiting_time, teller_working_time, queue_max_time;
+long long int teller_waiting_time, teller_working_time, queue_max_time,max_break_duration1,max_break_duration2,max_break_duration3,min_break_duration1,min_break_duration2,min_break_duration3, break_duration_time;
 long long int t1p, t1d, t2p, t2d, t3p, t3d, t_max_wait = 0;
 long long int system_time, queue_wait_time= 0;
 
@@ -66,6 +66,8 @@ void* enter_customer( void* arg ) {
 
 void* teller1( void* arg ) {
 	cust_timing customer_data;
+	int break_time ;
+	int break_duration;
 	int min = 30*SEC;
 	int max = 8 *MIN;
 	int hr, mn, sec, wait_time, t_wait, nsec;
@@ -73,6 +75,8 @@ void* teller1( void* arg ) {
     while( 1 ) {
     	nsec = ranged_random(min,max);				// get time between 30sec to 8min
 		teller_process_time1.tv_nsec = nsec;
+		break_time  = system_time + nsec;
+
     	if (qSize > 0) {							// run only if customer waits on the line
     		nsec = nsec/SEC							// turn the system time into human readable time
     		t1p = t1d;								// teller_1's start working time -> previous work's done time
@@ -91,7 +95,7 @@ void* teller1( void* arg ) {
     		teller_waiting_time += t_wait;			// increment teller's wait time
     		teller_working_time += nsec;			// increment teller's work time
 
-			tran1++;								// increment teller's tansaction time for record
+			tran1++;								// increment teller's transaction time for record
 			pthread_mutex_unlock( &mutex );
 
 			/* increment the waiting time for calculating average waiting time */
@@ -110,7 +114,23 @@ void* teller1( void* arg ) {
 			}
 			queue_wait_time += wait_time;			// increment total wait time
 			printf("Customer_%d's wait_time: %d sec\n", customer_data.cust_id, wait_time);
-
+			if(system_time > break_time)
+			{
+				break_duration = nsec;
+				usleep(nsec);
+				int break_count_1 = break_count_1 +1; 			///////////////////////calculates no.of breaks for each teller.
+			}
+			int break_duration_time= break_duration_time + break_duration;
+			if(break_duration>max_break_duration1)
+			{
+					max_break_duration1=break_duration;
+					printf("Max break duration : %d min %d sec \n",((break_duration%3600)/60),((break_duration%3600)%60));
+			}
+			else if (break_duration<max_break_duration1)
+			{
+					min_break_duration1=break_duration;
+					printf("Min break duration : %d min %d sec \n ",((break_duration%3600)/60),((break_duration%3600)%60));
+			}
 			/* snooze for 30 sec - 8 min in system time */
 			nanosleep(&teller_process_time1, &end_time);
     	}
@@ -121,6 +141,8 @@ void* teller1( void* arg ) {
 
 void* teller2( void* arg ) {
 	cust_timing customer_data;
+	int break_time ;
+	int break_duration;
 	int min = 30*SEC;
 	int max = 8 *MIN;
 	int hr, mn, sec, wait_time, t_wait, nsec;
@@ -164,6 +186,23 @@ void* teller2( void* arg ) {
 			queue_wait_time += wait_time;			// increment total wait time
 			printf("Customer_%d's wait_time: %d sec\n", customer_data.cust_id, wait_time);
 
+			if(system_time > break_time)
+						{
+							break_duration = nsec;
+							usleep(nsec);
+							int break_count_2 = break_count_2 +1; 	///////////////////////calculates no.of breaks for each teller.
+						}
+						break_duration_time= break_duration_time + break_duration;
+						if(break_duration>max_break_duration2)
+						{
+								max_break_duration2=break_duration;
+								printf("Max break duration : %d min %d sec \n",((break_duration%3600)/60),((break_duration%3600)%60));
+						}
+						else if (break_duration<max_break_duration2)
+						{
+								min_break_duration2=break_duration;
+								printf("Min break duration : %d min %d sec \n ",((break_duration%3600)/60),((break_duration%3600)%60));
+						}
 			/* snooze for 30sec - 8min in system time */
 			nanosleep(&teller_process_time2, &end_time);
     	}
@@ -217,7 +256,23 @@ void* teller3( void* arg ) {
 			}
 			queue_wait_time += wait_time;		// increment total wait time
 			printf("Customer_%d's wait_time: %d sec\n", customer_data.cust_id, wait_time);
-
+			if(system_time > break_time)
+									{
+										break_duration = nsec;
+										usleep(nsec);
+										int break_count_2 = break_count_2 +1; 	///////////////////////calculates no.of breaks for each teller.
+									}
+									break_duration_time= break_duration_time + break_duration;
+									if(break_duration>max_break_duration2)
+									{
+											max_break_duration2=break_duration;
+											printf("Max break duration : %d min %d sec \n",((break_duration%3600)/60),((break_duration%3600)%60));
+									}
+									else if (break_duration<max_break_duration2)
+									{
+											min_break_duration2=break_duration;
+											printf("Min break duration : %d min %d sec \n ",((break_duration%3600)/60),((break_duration%3600)%60));
+									}
 			/* snooze for 30sec - 8min in system time */
 			nanosleep(&teller_process_time3, &end_time);
     	}
