@@ -424,7 +424,10 @@ int main( int argc, char *argv[] ) {
 	);
 
     /* 8. The maximum depth of the customer queue */
-	printf("8. The maximum depth of the customer queue: %d\n", max_depth);
+	printf(
+		"8. The maximum depth of the customer queue: %d\n",
+		max_depth
+	);
 
 
 	/*Number of Breaks by each teller *
